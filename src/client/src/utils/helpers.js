@@ -1,3 +1,5 @@
+import { setUploadPercentage, setUploadStatus } from "@/redux/features/upload/uploadSlice";
+import { dispatch } from "@/redux/store";
 import { io } from "socket.io-client";
 
 const socket = io('http://localhost:5000');
@@ -32,7 +34,7 @@ function uploadChunk(
         progressPercentage,
     });
 }
-export function handleFile(file) {
+export function uploadFile(file) {
     let BEGINNING_OF_CHUNK = 0;
     const CHUNK_SIZE = 1e5;
     let ENDING_OF_CHUNK = CHUNK_SIZE;
@@ -48,7 +50,9 @@ export function handleFile(file) {
                 // name: `${Date.now().toString()}.${file.name.split('.')[1]}`,
                 name:file.name,
                 type: file.type.split('/')[0],
+                size:file.size,
             });
+            dispatch(setUploadStatus('Meta sent'))
 
             socket
                 .off('server/receivedFileMeta')
@@ -68,10 +72,11 @@ export function handleFile(file) {
                     i++;
                     socket
                         .off('server/chunkReceived')
-                        .on('server/chunkReceived', (payload) => {
-                            if (!payload.isValidChunk) {
+                        .on('server/chunkReceived', ({isValidChunk,uploadedPercentage}) => {
+                            dispatch(setUploadStatus('Uploading'))
+                            dispatch(setUploadPercentage(uploadedPercentage));
+                            if (!isValidChunk) {
                                 console.log('Chunk failed at ' + i);
-
                                 uploadChunk(
                                     id,
                                     file,
@@ -94,6 +99,8 @@ export function handleFile(file) {
                                 ENDING_OF_CHUNK += CHUNK_SIZE;
                                 i++;
                             } else {
+                                dispatch(setUploadStatus('Uploaded'));
+                                dispatch(setUploadPercentage(0));
                                 socket.emit('client/chunkSendComplete', {
                                     id
                                 });
@@ -120,7 +127,7 @@ export const SocketFileUploader = async (filesArray = []) => {
 
         try {
             for (let i = 0; i < filesArray.length; i++) {
-                const res = await handleFile(filesArray[i]);
+                const res = await uploadFile(filesArray[i]);
                 resultArray.push(res.message);
             }
 

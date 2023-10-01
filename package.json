@@ -4,20 +4,22 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon ./src/app.js",
-    "client": "cd ./src/client && yarn dev"
+    "server": "npm i -g yarn && yarn && nodemon ./src/app.js",
+    "client": "cd ./src/client && yarn && start http://localhost:3000 && yarn dev",
+    "duo": "concurrently \" yarn server\" \"yarn client\" "
   },
   "type": "commonjs",
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "concurrently": "^8.2.1",
     "nodemon": "^3.0.1"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.18.2",
-    "mongoose": "^7.5.2",
+    "mongoose": "^7.5.3",
     "socket.io": "^4.7.2",
     "uuid": "^9.0.1"
   }

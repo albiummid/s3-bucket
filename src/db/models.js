@@ -30,7 +30,7 @@ const bucket_file = model("bucket_files",new Schema({
         required:true,
         default:false,
     },
-    public_url:{
+    public_slug:{
         type:String,
         required:true
     },
@@ -42,7 +42,7 @@ const bucket_file = model("bucket_files",new Schema({
     },
     owner:{
         type:String,
-        required:true
+        // required:true
     },
 
 },schemaOptions),'bucket_files')

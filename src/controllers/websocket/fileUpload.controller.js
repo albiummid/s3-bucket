@@ -13,53 +13,13 @@ const { promisify } = require('util');
 readdir = promisify(readdir);
 stat = promisify(stat);
 
-const sysFiles = [
-	'$RECYCLE.BIN',
-	'MSOCache',
-	'Recovery',
-	'Recycler',
-	'System Volume Information',
-	'Thumbs.db',
-];
+
 
 
 let File = {};
-const filesDir = path.join(__dirname,'..','..','bucket','')
-const ReadDir = async (dir = filesDir)=>{
-	try{
-		let DirContents = {
-			error: null,
-			location: dir,
-			folders: [],
-			files: []
-		};
 
-		let dirList = await readdir(dir);
-		
-		dirList = dirList.filter(x=>!sysFiles.includes(x));
 
-		dirList.forEach( (file)=>{
-			const FileInfo =  statSync(dir + '/'+ file);
-			if (FileInfo.isDirectory()) {
-				DirContents.folders.push({name: file, stat: FileInfo, loc: dir });
-			}else{
-				DirContents.files.push({ name: file, stat: FileInfo, loc: dir });
-			}
-		});
-		
-		return DirContents;
-	}catch(err){
-		let DirContents = {
-			error: err,
-			location: dir,
-			folders: [],
-			files: []
-		};
-		return DirContents;
-	}
-}
-
-ReadDir().then(x=>console.log(x));
+// ReadDir().then(x=>console.log(x));
 
 
 module.exports = {
