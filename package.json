@@ -4,9 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "server": "npm i -g yarn && yarn && nodemon ./src/app.js",
+    "dep":"npm i -g yarn concurrently && yarn && cd .src/client && yarn",
+    "server": "npm run dep && nodemon ./src/app.js",
     "client": "cd ./src/client && yarn && start http://localhost:3000 && yarn dev",
-    "duo": "concurrently \" yarn server\" \"yarn client\" "
+    "duo": " npm run dep && concurrently \" yarn server\" \"yarn client\" "
   },
   "type": "commonjs",
   "keywords": [],
