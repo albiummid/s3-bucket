@@ -13,6 +13,10 @@ const bucket_file = model("bucket_files",new Schema({
         type:String,
         required:true
     },
+    original_name:{
+        type:String,
+        required:true,
+    },
     file_size:{
         type:Number,
         required:true

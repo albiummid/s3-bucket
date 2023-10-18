@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dep":"npm i -g yarn concurrently && yarn && cd .src/client && yarn",
-    "server": "npm run dep && nodemon ./src/app.js",
+    "dep": "npm i -g yarn concurrently && yarn",
+    "server": "nodemon ./src/app.js",
     "client": "cd ./src/client && yarn && start http://localhost:3000 && yarn dev",
     "duo": " npm run dep && concurrently \" yarn server\" \"yarn client\" "
   },
@@ -20,7 +20,11 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.18.2",
+    "file-type": "^18.5.0",
+    "jimp": "^0.22.10",
+    "mime": "^3.0.0",
     "mongoose": "^7.5.3",
+    "sharp": "^0.32.6",
     "socket.io": "^4.7.2",
     "uuid": "^9.0.1"
   }

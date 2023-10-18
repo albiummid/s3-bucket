@@ -5,8 +5,12 @@ let {
 	open, 
 	write, 
 	close,
-	readdir
+	readdir,
+	readFileSync,
+	fstat,
+	fstatSync
 } = require('fs');
+const fs = require('fs')
 const path = require('path');
 const { promisify } = require('util');
 
@@ -55,7 +59,26 @@ const ReadDir = async (dir = filesDir)=>{
 	}
 }
 
+const mime = require('mime');
+
+const fileInfoAsync = async(filePath)=>{
+	const fileBuffer =  readFileSync(filePath);
+	const {size} =  fs.statSync(filePath);
+	if(!Boolean(fileBuffer)){
+		throw new Error('No file found in this path')
+	}
+	const {base,ext,name} =path.parse(filePath);
+	const mimeType = mime.getType(filePath);
+	return {
+		name:base,
+		ext,
+		size,
+		mime:mimeType
+	}
+}
+
 module.exports = {
  ReadDir,
- sysFiles
+ sysFiles,
+fileInfoAsync
 }

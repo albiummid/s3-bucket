@@ -79,7 +79,7 @@ module.exports = {
 				});
 
 			} else {
-
+                
 				const Place = File.Downloaded / BufferSize;
 				const Percent = Math.floor((File.Downloaded / File.FileSize) * 10000)/100;
 				socket.emit('MoreData', { 'Place' : Place, 'Percent' :  Percent});

@@ -11,7 +11,7 @@ app.use(express.urlencoded({extended: '50mb'}));
 const httpApp = http.Server(app);
 const cors = require('cors');
 const path = require('path');
-const { ReadDir } = require('./utils/helpers');
+const { ReadDir, fileInfoAsync } = require('./utils/helpers');
 const db = require('./db');
 const { default: mongoose } = require('mongoose');
 const appConfig = require('../app.config');
@@ -36,10 +36,10 @@ const files = {};
 
         socket.on('client/sendFileMetaData',async({name,type,size})=>{
            try{
-            console.log("__FILE_TYPE__:",type)
+            const id = uuid();
             const {name:fileName,ext:fileExt} = path.parse(name);
-            const tempFilename = '_temp'+fileName+'.'+type;
-            const finalFileName = fileName + '_'+Date.now().toString()+fileExt
+            const tempFilename = '_temp'+id+'.'+type;
+            const finalFileName = id + '_'+Date.now().toString()+fileExt
             console.log(path.parse(name));
 
             const bucketPath = path.join(__dirname,'bucket');
@@ -62,8 +62,9 @@ const files = {};
             }
             fs.writeFileSync(tempFilePath,'');
                 const fileInfo = {
-                    id:uuid(),
-                    name,
+                    id,
+                    name:finalFileName,
+                    originalName:fileName+fileExt,
                     tempFilePath,
                     finalFilePath,
                     size,
@@ -86,21 +87,22 @@ const files = {};
             fs.appendFileSync(tempFilePath, buffer);
             console.log(`[ ${name} ] _UPLOADED__:`,progressPercentage,"%")
             socket.emit('server/chunkReceived',{
-                isValidChunk:Boolean(chunk),
+                isValidChunk:true, // have to verify
                 uploadedPercentage:progressPercentage,
             })
         })
 
         socket.on('client/chunkSendComplete',async({id})=>{
             try{
-                const {tempFilePath,finalFilePath,name,size,type} = files[id];
+                const {tempFilePath,finalFilePath,name,size,type,originalName} = files[id];
                 fs.renameSync(tempFilePath,finalFilePath);
                 const {dir,base} = path.parse(finalFilePath)
                 console.log("__DIR:",dir)
                 const route =( dir.replaceAll('\\','/')).split('src/')[1];
                 const slug = route + '/'+base;
                const bucketFile = await db.bucket_file.create({
-                    name:name,
+                    name,
+                    original_name:originalName,
                     file_size:size,
                     file_type:type,
                     file_destination:finalFilePath,
@@ -125,7 +127,6 @@ const files = {};
 })(io)
 
 
-
 // Check and update Bucket Dir
 ReadDir(path.join(__dirname,'bucket'))
 .then(res=>{
@@ -144,7 +145,44 @@ const startServer = ()=>{
     })
 }
 
+const sharp = require('sharp');
+const Jimp = require('jimp');
+
+app.use('/bucket/images',async(req,res)=>{
+    const {
+        w,
+        h,
+        q
+    } =  req.query
+    const imageName = (req.url.split('/')[1]).split('?')[0]
+    const imageInRecord = await db.bucket_file.findOne({name:imageName});
+    const imagePath = path.join(__dirname,'bucket','images',imageName);
+    const isImageAvailable = fs.readFileSync(imagePath);
+    if(isImageAvailable && imageInRecord){
+       let {
+        name,
+        ext,
+        size,
+        mime
+       } =  await fileInfoAsync(imagePath);
+       const {width,height} =  (await Jimp.read(imagePath)).bitmap
+     sharp(imagePath).resize(Number(w??width),Number(h??height)).toFormat(ext.split('.')[1]).toBuffer().then((data)=>{
+       let img =  data.toString("binary");
+       res.writeHead(200, {'Content-Type': mime });
+       res.end(img, 'binary');
+       });
+    }else{
+      return  res.status(404).send(`<html>
+        <body>
+            <h1>
+                No image found !
+            </h1>
+        </body>
+    </html>`)
+    }
+})
 app.use('/bucket', express.static(path.join(__dirname, 'bucket')))
+
 
 // Server will run iff the DB connection is successful
 mongoose
