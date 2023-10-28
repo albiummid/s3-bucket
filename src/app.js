@@ -83,11 +83,11 @@ const files = {};
 
         socket.on('client/sendFileChunk',({id,chunk,progressPercentage})=>{
             const {tempFilePath,name} = files[id];
-            const buffer = new Buffer.from(chunk,'base64');
+            const buffer = new Buffer.from(chunk,"base64");
             fs.appendFileSync(tempFilePath, buffer);
             console.log(`[ ${name} ] _UPLOADED__:`,progressPercentage,"%")
             socket.emit('server/chunkReceived',{
-                isValidChunk:true, // have to verify
+                isValidChunk:Boolean(buffer), // have to verify
                 uploadedPercentage:progressPercentage,
             })
         })
@@ -146,7 +146,6 @@ const startServer = ()=>{
 }
 
 const sharp = require('sharp');
-const Jimp = require('jimp');
 
 app.use('/bucket/images',async(req,res)=>{
     const {
@@ -165,12 +164,20 @@ app.use('/bucket/images',async(req,res)=>{
         size,
         mime
        } =  await fileInfoAsync(imagePath);
-       const {width,height} =  (await Jimp.read(imagePath)).bitmap
-     sharp(imagePath).resize(Number(w??width),Number(h??height)).toFormat(ext.split('.')[1]).toBuffer().then((data)=>{
-       let img =  data.toString("binary");
-       res.writeHead(200, {'Content-Type': mime });
-       res.end(img, 'binary');
-       });
+       console.log(imagePath)
+       const image = sharp(imagePath);
+
+       image.metadata().then(({width,height})=>{
+        if(w&& h){
+            return image.resize(w,h).toFormat(ext.split('.')[1]).toBuffer()
+        }
+            return image.toBuffer()
+       }).then((buffer)=>{
+        let img =  buffer.toString("binary");
+        res.writeHead(200, {'Content-Type': mime });
+        res.end(img, 'binary');
+       })
+       
     }else{
       return  res.status(404).send(`<html>
         <body>
@@ -182,6 +189,14 @@ app.use('/bucket/images',async(req,res)=>{
     }
 })
 app.use('/bucket', express.static(path.join(__dirname, 'bucket')))
+
+process.on("unhandledRejection", (err) => {
+    console.log(`Error: ${err.message}`);
+    // console.log(`Shutting down the server due to Unhandled Promise Rejection`);
+    // server.close(() => {
+    //     process.exit(1);
+    // });
+});
 
 
 // Server will run iff the DB connection is successful
